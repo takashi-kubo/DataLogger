@@ -62,17 +62,8 @@ void setup(){
     //BatteryMonitor Setup
     uart_BATT.setTransmitEnablePin(21);
     uart_BATT.begin(115200); // BatteryMonitor SerialPort
-    // uart_BATT.setHwFlowCtrlMode(HW_FLOWCTRL_RTS);
-    // uart_BATT.setPins(16,17,-1,21); //RX:16,TX:17,RTS:21
-    // uart_BATT.begin(115200,SWSERIAL_8N1,16,17);
-    // uart_BATT.setTransmitEnablePin(21);
     bm.begin(1,uart_BATT);
     
-    // bm.begin(1,Serial1);
-    // pinMode(TX_BAT_EN,OUTPUT);
-    // while(!uart_BATT){}
-    // digitalWrite(TX_BAT_EN,LOW);    //disable DE
-
     //VESC SetUP
 
     //SD Setup
@@ -80,10 +71,10 @@ void setup(){
     //GPS Setup
     //Connection 赤色=VCC、黒色=GND、橙色=TXD、緑色=RXD、茶色=1pps
     uart_GPS.begin(9600,SERIAL_8N1,14,4);
-    // uart_GPS.listen();
 }
-    double BattVoltage = bm.getVoltage();
-    double BattCurrent = bm.getCurrent();
+double BattVoltage;
+double BattCurrent;
+
 void loop(){
 
     //GPS
@@ -105,8 +96,13 @@ void loop(){
     // uart_BATT.flush();
     // getBattMonValue();
 
-    double BattVoltage = bm.getVoltage();
-    double BattCurrent = bm.getCurrent();
+    double CurrentBuf = bm.getCurrent();
+    //115200bpsのSoftwareSerialのため文字化けが頻発する
+    //文字化けデータは0が返るので0=無効値として扱う
+    if(CurrentBuf != 0.0){
+      BattVoltage = bm.getVoltage();
+      BattCurrent = bm.getCurrent();
+    }
     double BattPower = BattVoltage * BattCurrent;
     DispVoltage.setValue((uint32_t)(floor(BattVoltage*100.0 )));
 
