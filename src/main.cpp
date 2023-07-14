@@ -9,8 +9,8 @@
 // #define nexSerial uart_DISP
 
 //Display
-//16 is RX_GUI,17 is TX_GUI 
-SoftwareSerial uart_DISP(21, 22); // RX, TX
+// SoftwareSerial uart_DISP(21, 22); // RX, TX
+HardwareSerial uart_DISP(2);
 // NexText DispPSpeed = NexText(1,11,"x0");    //Pulse Speed
 NexText DispGSpeed = NexText(1,12,"SPD");    //GPS Speed
 NexText DispETime = NexText(1,13,"ETIME");     //Elapsed Time
@@ -53,7 +53,8 @@ void setup(){
   Serial.begin(115200);
 
   //Display Setup
-  nexSerial.begin(115200);  // Display
+  // nexSerial.begin(115200);  // Display
+  nexSerial.begin(115200,SERIAL_8N1,21,22);
 
   //BatteryMonitor Setup
   uart_BATT.setTransmitEnablePin(13);
@@ -156,7 +157,7 @@ void loop(){
 
   delay(10);  //delay 10ms for flush uart buffer...
   //DISPLAY
-  uart_DISP.listen();
+  // uart_DISP.listen();  //USE for SoftwareSerial
   DispGPSTime.setText(bufTime);
   DispGSpeed.setText(bufSpeed);
   DispVoltage.setText(bufBattV);
