@@ -6,12 +6,12 @@
 #include <JuncTek_BatteryMonitor.h>
 #include "dischargeCurveForWEM.h"
 #include <SD.h>
+// #include <VescUart.h>
 // #define nexSerial uart_DISP
 
 //Display
 // SoftwareSerial uart_DISP(21, 22); // RX, TX
 HardwareSerial uart_DISP(2);
-// NexText DispPSpeed = NexText(1,11,"x0");    //Pulse Speed
 NexText DispGSpeed = NexText(1,12,"SPD");    //GPS Speed
 NexText DispETime = NexText(1,13,"ETIME");     //Elapsed Time
 NexText DispVoltage = NexText(1,14,"BV");   //Voltage
@@ -31,7 +31,6 @@ SoftwareSerial uart_BATT(16, 17); // RX, TX
 // HardwareSerial uart_BATT(1);
 // uint8_t TX_BAT_EN = 13;
 BatteryMonitor bm;
-// char query[] = ":R50=1,2,1,\r\n";
 
 //GPS
 // SoftwareSerial uart_GPS(14);  //RxOnly
@@ -39,7 +38,8 @@ HardwareSerial uart_GPS(1);
 TinyGPSPlus gps;
 
 //VESC
-SoftwareSerial uart_VESC(26,27);
+// VescUart vesc;
+// SoftwareSerial uart_VESC(26,27);
 
 //SD
 int fileName = 0;
@@ -54,7 +54,7 @@ void setup(){
 
   //Display Setup
   // nexSerial.begin(115200);  // Display
-  nexSerial.begin(115200,SERIAL_8N1,21,22);
+  nexSerial.begin(115200,SERIAL_8N1,21,22); //Use HardwareSerial for noise reduction
 
   //BatteryMonitor Setup
   uart_BATT.setTransmitEnablePin(13);
@@ -62,6 +62,10 @@ void setup(){
   bm.begin(1,uart_BATT);
   
   //VESC SetUP
+  /** Setup SoftwareSerial port */
+  // vescSerial.begin(19200);
+  /** Define which ports to use as UART */
+  // vesc.setSerialPort(&vescSerial);
 
   //SD Setup
   if(SD.begin()){
@@ -80,12 +84,7 @@ void setup(){
       Serial.printf("ERROR File Open");
     }
   }
-  // else{
-  //   DispPower.setText("NO SD");
-  //   while(1){
-
-  //   }
-  // }
+ 
   //GPS Setup
   //Connection 赤色=VCC、黒色=GND、橙色=TXD、緑色=RXD、茶色=1pps
   uart_GPS.begin(9600,SERIAL_8N1,14,4);
@@ -123,6 +122,8 @@ void loop(){
   }
 
   long time_gps = millis();
+
+  //VESC
 
   //BatteryMonitor
   uart_BATT.listen();
