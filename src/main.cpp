@@ -4,7 +4,8 @@
 #include <HardwareSerial.h>
 #include <Nextion.h>
 #include <JuncTek_BatteryMonitor.h>
-#include "dischargeCurveForWEM.h"
+// #include "dischargeCurveForWEM.h"
+#include "dischargeCurveNiMH.h"
 #include <SD.h>
 // #include <VescUart.h>
 // #define nexSerial uart_DISP
@@ -48,6 +49,9 @@ File file;
 char fileHeader[] = {"Time,Etime,Latitude,Longitude,Altitude,Direction,Speed,IdealVoltage,Voltage,Current,Power,DischargeCapacity"};
 bool enableRecord = false;
 
+//DischargeArrayLength
+int CurveLen = sizeof(idealCurve)/sizeof(double);
+
 void setup(){
   //DebugConsole
   Serial.begin(115200);
@@ -88,6 +92,11 @@ void setup(){
   //GPS Setup
   //Connection 赤色=VCC、黒色=GND、橙色=TXD、緑色=RXD、茶色=1pps
   uart_GPS.begin(9600,SERIAL_8N1,14,4);
+
+  //Switch Setup
+  //IO10 Both PullUP
+  pinMode(10,INPUT_PULLUP);
+
 }
 
 double BattVoltage;
@@ -194,9 +203,10 @@ void loop(){
   }
 
   long time_sd = millis();
-
-  ElapsedTime++;
-
+  if(LOW == digitalRead(10)){
+    ElapsedTime++;
+    ElapsedTime %= CurveLen;
+  }
 
   Serial.printf("GPS:%3ld,BM:%3ld,SPRINT:%3ld,DISP:%3ld,SD:%3ld\n",
   time_gps - time_Start,time_bm - time_gps,time_disp_sprint - time_bm,time_disp - time_disp_sprint,time_sd - time_disp);
