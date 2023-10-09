@@ -102,7 +102,6 @@ void setup(){
 double BattVoltage;
 double BattCurrent;
 double IntCurrent;
-double VoltageBuf;
 int ElapsedTime = 0;
 char bufTime[16];
 char bufETime[16];
@@ -137,13 +136,13 @@ void loop(){
   //BatteryMonitor
   uart_BATT.listen();
 
-  VoltageBuf = bm.getVoltage();
   //115200bpsのSoftwareSerialのため文字化けが頻発する
-  //電圧が3.0以上の時更新する
-  if(VoltageBuf >= 3.0){
+  int bmRetryCount = 0;
+  do{
     BattVoltage = bm.getVoltage();
     BattCurrent = bm.getCurrent();
-  }
+    bmRetryCount++;
+  }while(BattVoltage == 0.0f || bmRetryCount < 10);
 
   double BattPower = BattVoltage * BattCurrent;
   IntCurrent+=BattCurrent;
@@ -155,7 +154,7 @@ void loop(){
   sprintf(bufBattV,"%2.1f",BattVoltage);
   sprintf(bufBattA,"%2.1f",BattCurrent);
   sprintf(bufBattP,"%3.1f",BattPower);
-  sprintf(bufBattIA,"%2.1f",IntCurrent/3600);
+  sprintf(bufBattIA,"%1.2f",IntCurrent/3600);
   sprintf(bufETime,"%02d:%02d:%02d",ElapsedTime/3600,(ElapsedTime/60)%60,ElapsedTime%60);
   im05v = idealCurve[ElapsedTime]-0.5;
   ip05v = idealCurve[ElapsedTime]+0.5;
