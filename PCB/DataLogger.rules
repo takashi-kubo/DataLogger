@@ -1,0 +1,97 @@
+
+(rules PCB DataLogger
+  (snap_angle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (fanout off)
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    (start_pass_no 221)
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.6)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.6)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clear 200.0)
+    (clear 125.0 (type smd_to_turn_gap))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um-Power" "Via[0-1]_800:400_um" Power
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (via 
+    "Via[0-1]_800:400_um-kicad_default" "Via[0-1]_800:400_um" "kicad_default"
+  )
+  (via_rule
+    Power "Via[0-1]_800:400_um-Power"
+  )
+  (via_rule
+    default "Via[0-1]_800:400_um"
+  )
+  (via_rule
+    "kicad_default" "Via[0-1]_800:400_um-kicad_default"
+  )
+  (class default
+    "Net-(J5-Pad3)" "Net-(J5-Pad4)" "Net-(Q1-Pad1)" "Net-(J1-Pad1)" "Net-(Q2-Pad1)" "Net-(J1-Pad7)" "SPI_MOSI" "SPI_CLK"
+    "SPI_MISO" "Net-(J3-Pad4)" "RX_GPS" "TX_GUI" "Net-(J4-Pad3)" "PPS_GPS" "Net-(J3-Pad5)" EN
+    "unconnected-(U1-Pad4)" "unconnected-(U1-Pad5)" "Net-(J10-Pad1)" "Net-(J11-Pad1)" "Net-(J8-Pad1)" "Net-(J9-Pad1)" "VESC_DAC" "RX_BAT"
+    "TX_BAT" "unconnected-(U1-Pad17)" "unconnected-(U1-Pad18)" "unconnected-(U1-Pad19)" "unconnected-(U1-Pad20)" "unconnected-(U1-Pad21)" "unconnected-(U1-Pad22)" "TX_GPS"
+    "unconnected-(U1-Pad24)" IO0 "RX_GUI" "SPI_CS" "unconnected-(U1-Pad32)" "RX_VESC" "RX_ESP32" "TX_ESP32"
+    "unconnected-(U1-Pad36)" "TX_VESC" "TX_BAT_EN" "unconnected-(J1-Pad3)" "unconnected-(J6-Pad1)" "unconnected-(J6-Pad8)" "unconnected-(J6-Pad9)" "unconnected-(J6-Pad10)"
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "kicad_default"
+    (clearance_class "kicad_default")
+    (via_rule "kicad_default")
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Power
+    GND +5V +3V3
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 500.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)
