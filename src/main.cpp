@@ -64,6 +64,7 @@ void setup(){
   uart_BATT.setTransmitEnablePin(13);
   uart_BATT.begin(115200); // BatteryMonitor SerialPort
   bm.begin(1,uart_BATT);
+  bm.setCacheTime(10);
   
   //VESC SetUP
   /** Setup SoftwareSerial port */
@@ -99,22 +100,24 @@ void setup(){
 
 }
 
-double BattVoltage;
-double BattCurrent;
-double IntCurrent;
+
+double IntCurrent = 0.0f;
 int ElapsedTime = 0;
-char bufTime[16];
-char bufETime[16];
-char bufSpeed[16];
-char bufBattV[16];
-char bufBattA[16];
-char bufBattP[16];
-char bufBattIA[16];
-char bufIM05V[16];
-char bufIP05V[16];
-double im05v,ip05v;
+
 
 void loop(){
+  char bufTime[16];
+  char bufETime[16];
+  char bufSpeed[16];
+  char bufBattV[16];
+  char bufBattA[16];
+  char bufBattP[16];
+  char bufBattIA[16];
+  char bufIM05V[16];
+  char bufIP05V[16];
+  double im05v,ip05v;
+  double BattVoltage = 0.0f;
+  double BattCurrent = 0.0f;
 
   long time_Start = millis();
 
@@ -137,12 +140,19 @@ void loop(){
   uart_BATT.listen();
 
   //115200bpsのSoftwareSerialのため文字化けが頻発する
-  int bmRetryCount = 0;
-  do{
-    BattVoltage = bm.getVoltage();
-    BattCurrent = bm.getCurrent();
-    bmRetryCount++;
-  }while(BattVoltage == 0.0f || bmRetryCount < 10);
+  int BM_AverageValue = 16;
+  int BM_VoltageFailure = 0;
+  for(int i=0; i<BM_AverageValue;i++){
+    if(1.0 < bm.getVoltage())
+      BattVoltage += bm.getVoltage();
+    else
+      BM_VoltageFailure++;
+    BattCurrent += bm.getCurrent();
+    delay(10);
+  }
+    BattVoltage /= (double)(BM_AverageValue - BM_VoltageFailure);
+    BattCurrent /= (double)BM_AverageValue;
+
 
   double BattPower = BattVoltage * BattCurrent;
   IntCurrent+=BattCurrent;
@@ -152,7 +162,7 @@ void loop(){
   sprintf(bufTime,"%02d:%02d:%02d",(gps.time.hour()+9)%24,gps.time.minute(),gps.time.second());
   sprintf(bufSpeed, "%2.1f",gps.speed.kmph());
   sprintf(bufBattV,"%2.1f",BattVoltage);
-  sprintf(bufBattA,"%2.1f",BattCurrent);
+  sprintf(bufBattA,"%2.2f",BattCurrent);
   sprintf(bufBattP,"%3.1f",BattPower);
   sprintf(bufBattIA,"%1.2f",IntCurrent/3600);
   sprintf(bufETime,"%02d:%02d:%02d",ElapsedTime/3600,(ElapsedTime/60)%60,ElapsedTime%60);
