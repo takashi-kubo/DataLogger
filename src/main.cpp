@@ -28,14 +28,14 @@ NexText DispIP05V = NexText(1,21,"IP05V");
 
 //BatteryMonitor
 //TODO use hardwareserial and change connection
-SoftwareSerial uart_BATT(16, 17); // RX, TX
+// SoftwareSerial uart_BATT(16, 17); // RX, TX
 // HardwareSerial uart_BATT(1);
 // uint8_t TX_BAT_EN = 13;
 BatteryMonitor bm;
 
 //GPS
-// SoftwareSerial uart_GPS(14);  //RxOnly
-HardwareSerial uart_GPS(1);
+SoftwareSerial uart_GPS(14);  //RxOnly
+// HardwareSerial uart_GPS(1);
 TinyGPSPlus gps;
 
 //VESC
@@ -54,17 +54,30 @@ int CurveLen = sizeof(idealCurve)/sizeof(double);
 
 void setup(){
   //DebugConsole
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   //Display Setup
   // nexSerial.begin(115200);  // Display
   nexSerial.begin(115200,SERIAL_8N1,21,22); //Use HardwareSerial for noise reduction
 
   //BatteryMonitor Setup
-  uart_BATT.setTransmitEnablePin(13);
-  uart_BATT.begin(115200); // BatteryMonitor SerialPort
-  bm.begin(1,uart_BATT);
+  // uart_BATT.setTransmitEnablePin(13);
+  // uart_BATT.begin(115200); // BatteryMonitor SerialPort
+  // bm.begin(1,uart_BATT);
+  Serial1.setPins(16,17);
+  // RS485 uart_RS485(&Serial1,13);
+  Serial1.begin(115200);
+  // bm.begin(1,uart_RS485);
+  bm.begin(1,Serial1);
   bm.setCacheTime(10);
+  pinMode(TX_BAT_EN,OUTPUT);
+
+// Need to add inJunkTek_BatteryMonitor.cpp:sendMessage()
+// Before: bm_serial->print(message);　
+// After:	digitalWrite(TX_BAT_EN,HIGH); //Enable RX mode
+// 		bm_serial->print(message);
+// 		bm_serial->flush();
+// 		digitalWrite(TX_BAT_EN,LOW); //Disable RX mode
   
   //VESC SetUP
   /** Setup SoftwareSerial port */
@@ -78,7 +91,7 @@ void setup(){
       sprintf(fineNameCHR,"/%d.csv",fileName);
       if(!SD.exists(fineNameCHR))break;
     }
-    Serial.printf("FILE:%s",fineNameCHR);
+    // Serial.printf("FILE:%s",fineNameCHR);
     file = SD.open(fineNameCHR,FILE_WRITE);
     if(file){
       enableRecord = true;
@@ -86,13 +99,14 @@ void setup(){
       file.close();
     }
     else{
-      Serial.printf("ERROR File Open");
+      // Serial.printf("ERROR File Open");
     }
   }
  
   //GPS Setup
   //Connection 赤色=VCC、黒色=GND、橙色=TXD、緑色=RXD、茶色=1pps
-  uart_GPS.begin(9600,SERIAL_8N1,14,4);
+  // uart_GPS.begin(9600,SERIAL_8N1,14,4);
+  uart_GPS.begin(9600); // GPS SerialPort
 
   //Switch Setup
   //IO10 Both PullUP
@@ -137,22 +151,38 @@ void loop(){
   //VESC
 
   //BatteryMonitor
-  uart_BATT.listen();
+  // uart_BATT.listen();
 
   //115200bpsのSoftwareSerialのため文字化けが頻発する
-  int BM_AverageValue = 16;
-  int BM_VoltageFailure = 0;
-  for(int i=0; i<BM_AverageValue;i++){
-    if(1.0 < bm.getVoltage())
-      BattVoltage += bm.getVoltage();
-    else
-      BM_VoltageFailure++;
-    BattCurrent += bm.getCurrent();
-    delay(10);
-  }
-    BattVoltage /= (double)(BM_AverageValue - BM_VoltageFailure);
-    BattCurrent /= (double)BM_AverageValue;
+  // int BM_AverageValue = 16;
+  // int BM_VoltageFailure = 0;
+  // for(int i=0; i<BM_AverageValue;i++){
+  //   if(1.0 < bm.getVoltage())
+  //     BattVoltage += bm.getVoltage();
+  //   else
+  //     BM_VoltageFailure++;
+  //   BattCurrent += bm.getCurrent();
+  //   // delay(10);
+  // }
+  //   BattVoltage /= (double)(BM_AverageValue - BM_VoltageFailure);
+  //   BattCurrent /= (double)BM_AverageValue;
 
+  BattVoltage = bm.getVoltage();
+  BattCurrent = bm.getCurrent();
+
+  //ボツ案:取れない
+  // double tempval = bm.getVoltage();
+  // while(1>tempval){
+  //   Serial.printf("Voltage:%f\n",tempval);
+  //   tempval = bm.getVoltage();
+  // }
+  // BattVoltage = tempval;
+
+  // tempval = bm.getCurrent();
+  // while(isnan(tempval)){
+  //   tempval = bm.getCurrent();
+  // }
+  // BattCurrent = tempval;
 
   double BattPower = BattVoltage * BattCurrent;
   IntCurrent+=BattCurrent;
@@ -173,8 +203,11 @@ void loop(){
   double VoltDiff = BattVoltage - idealCurve[ElapsedTime];
 
   long time_disp_sprint = millis();
+Serial.flush();
+Serial1.flush();
+Serial2.flush();
 
-  delay(10);  //delay 10ms for flush uart buffer...
+  // delay(10);  //delay 10ms for flush uart buffer...
   //DISPLAY
   // uart_DISP.listen();  //USE for SoftwareSerial
   DispGPSTime.setText(bufTime);
@@ -183,18 +216,18 @@ void loop(){
   DispCurrent.setText(bufBattA);
   DispPower.setText(bufBattP);
   DispICurrent.setText(bufBattIA);
-  DispETime.setText(bufETime);
-  DispIM05V.setText(bufIM05V);
-  DispIP05V.setText(bufIP05V);
-  if(BattVoltage <= im05v){
-      DispPace.setValue(0);
-  }
-  else if(ip05v <= BattVoltage){
-      DispPace.setValue(100);
-  }
-  else{
-      DispPace.setValue((int)((BattVoltage - im05v) * 100));
-  }
+  // DispETime.setText(bufETime);
+  // DispIM05V.setText(bufIM05V);
+  // DispIP05V.setText(bufIP05V);
+  // if(BattVoltage <= im05v){
+  //     DispPace.setValue(0);
+  // }
+  // else if(ip05v <= BattVoltage){
+  //     DispPace.setValue(100);
+  // }
+  // else{
+  //     DispPace.setValue((int)((BattVoltage - im05v) * 100));
+  // }
 
   long time_disp = millis();
 
